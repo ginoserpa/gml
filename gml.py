@@ -2,6 +2,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 
 def get_db_df():
@@ -15,6 +17,7 @@ def get_db_df():
     df = pd.concat(year_dfs)
 
     return df
+
 
 def get_yaml_files():
     """ 
@@ -66,3 +69,21 @@ def create_yaml_file_df(yaml_file):
     df = pd.DataFrame(dict_list)
 
     return df
+
+
+def get_lat_long(city, state, country):
+    geolocator = Nominatim(user_agent="my_geocoder_app") # Replace with a unique user agent
+    address = f"{city}, {state}, {country}"
+    
+    try:
+        location = geolocator.geocode(address)
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None, None
+    except GeocoderTimedOut:
+        print("Geocoding service timed out. Please try again.")
+        return None, None
+    except GeocoderServiceError as e:
+        print(f"Geocoding service error: {e}")
+        return None, None
