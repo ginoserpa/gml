@@ -2,15 +2,30 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+
+
+def get_db_df():
+    
+    yaml_files= get_yaml_files()
+    year_dfs = []
+    for yaml_file in yaml_files:
+        # print(yaml_file)
+        df = create_yaml_file_df(yaml_file)
+        year_dfs.append(df)
+    df = pd.concat(year_dfs)
+
+    return df
+
 def get_yaml_files():
     """ 
     Get a list of the yaml files from the gddb data directory.
     """
 
     current_directory = Path().cwd()/'..'/'gdshowsdb'/'data'/'gdshowsdb'
-    yaml_files = [item for item in current_directory.glob('*.yaml')]
+    yaml_files = [item for item in current_directory.glob('????.yaml')]
 
     return yaml_files
+
 
 
 def create_yaml_file_df(yaml_file):
@@ -37,17 +52,17 @@ def create_yaml_file_df(yaml_file):
                 segued = item[':segued']
                 dict_list.append({'date': date, 
                                 'year': year,
-                                'uuid': uuid,
                                 'venue': venue,
                                 'city': city,
                                 'state': state,
                                 'country': country,
+                                'name': name,
+                                'segued': segued,
+                                'uuid': uuid,
                                 'set_uuid': set_uuid,
                                 'song_uuid': song_uuid,
-                                'name': name,
-                                'segued': segued
                                 })
 
     df = pd.DataFrame(dict_list)
 
-    return df, data
+    return df
