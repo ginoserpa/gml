@@ -1,13 +1,24 @@
 from pathlib import Path
 import pandas as pd
 import yaml
+from functools import lru_cache
 
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 
-def get_db_df():
-    
+def get_db_df(from_data=True):
+
+    if from_data:
+        try:
+            df = pd.read_pickle('df.pkl')
+            print("Dataframe loaded from df.pkl")
+            return df
+        except FileNotFoundError:
+            print("df.pkl not found. Creating dataframe from YAML files.")
+            pass
+
+
     yaml_files= get_yaml_files()
     year_dfs = []
     for yaml_file in yaml_files:
@@ -15,6 +26,11 @@ def get_db_df():
         df = create_yaml_file_df(yaml_file)
         year_dfs.append(df)
     df = pd.concat(year_dfs)
+    df.reset_index(drop=True, inplace=True)
+
+        
+    # Store the df
+    df.to_pickle('df.pkl')
 
     return df
 
@@ -28,7 +44,6 @@ def get_yaml_files():
     yaml_files = [item for item in current_directory.glob('????.yaml')]
 
     return yaml_files
-
 
 
 def create_yaml_file_df(yaml_file):
@@ -61,16 +76,20 @@ def create_yaml_file_df(yaml_file):
                                 'country': country,
                                 'name': name,
                                 'segued': segued,
+                                'latitude': None,
+                                'longitude': None,
                                 'uuid': uuid,
                                 'set_uuid': set_uuid,
                                 'song_uuid': song_uuid,
                                 })
 
     df = pd.DataFrame(dict_list)
-
+   
     return df
 
 
+
+@lru_cache(maxsize=128)
 def get_lat_long(city, state, country):
     geolocator = Nominatim(user_agent="my_geocoder_app") # Replace with a unique user agent
     address = f"{city}, {state}, {country}"
@@ -87,3 +106,17 @@ def get_lat_long(city, state, country):
     except GeocoderServiceError as e:
         print(f"Geocoding service error: {e}")
         return None, None
+    
+
+def add_lat_long_columns(df):
+
+    for row in df.itertuples():
+        if pd.isna(row.latitude) and pd.isna(row.longitude):
+            lat, long = get_lat_long(row.city, row.state, row.country)
+            df.at[row.Index, 'latitude'] = lat
+            df.at[row.Index, 'longitude'] = long
+
+    # pickle the df 
+    df.to_pickle('df.pkl')
+
+    return df
