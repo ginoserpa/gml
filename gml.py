@@ -3,6 +3,8 @@ import pandas as pd
 import yaml
 from functools import lru_cache
 
+from datetime import datetime
+
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
@@ -27,7 +29,9 @@ def get_db_df(from_data=True):
         year_dfs.append(df)
     df = pd.concat(year_dfs)
     df.reset_index(drop=True, inplace=True)
-
+    df.to_excel("gd.xlsx", index=False)
+    # Create a datetime column
+    df['date_dt'] = pd.to_datetime(df['date'], format='%Y/%m/%d')
         
     # Store the df
     df.to_pickle('df.pkl')
@@ -89,9 +93,12 @@ def create_yaml_file_df(yaml_file):
 
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=256)
 def get_lat_long(city, state, country):
     geolocator = Nominatim(user_agent="my_geocoder_app") # Replace with a unique user agent
+    if country=='US':
+        country='United States'
+    city=city.replace('0','O') # Somebody using 0 instead of O 
     address = f"{city}, {state}, {country}"
     
     try:
@@ -120,3 +127,16 @@ def add_lat_long_columns(df):
     df.to_pickle('df.pkl')
 
     return df
+
+
+def get_weather(datetime, lat, lon):
+    from meteostat import Point, Daily, Hourly
+
+    start= datetime
+    end= datetime
+
+    location = Point(lat, lon)
+    daily = Daily(location, start, end)
+    daily = daily.fetch() 
+    
+    return daily

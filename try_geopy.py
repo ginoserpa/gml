@@ -19,8 +19,8 @@ def get_lat_long(city, state, country):
         return None, None
 
 # Example usage:
-city_name = "Salt Lake City"
-state_name = "UT"
+city_name = "Angels Camp"
+state_name = "CA"
 country_name = "USA"
 
 latitude, longitude = get_lat_long(city_name, state_name, country_name)
